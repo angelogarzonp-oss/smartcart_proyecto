@@ -1,0 +1,21 @@
+{
+  "name": "smartcart",
+  "version": "1.0.0",
+  "description": "SmartCart: e-commerce con Alpine.js, HTMX, Node.js/Express y SQL",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "alpinejs": "^3.17.4",
+    "chart.js": "^4.5.1",
+    "express": "^5.3.0",
+    "htmx.org": "^2.0.11"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^13.0.3"
+  }
+}
