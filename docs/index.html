@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartCart · Optimización Web con Alpine.js, HTMX y E-Commerce</title>
+  <meta name="description" content="Proyecto de Ingeniería de Software: tienda en línea construida con HTML5, CSS3, Alpine.js, HTMX, Node.js/Express y una base de datos SQL.">
+  <link rel="stylesheet" href="styles.css">
+  <script>try{document.documentElement.dataset.theme=localStorage.getItem('tema')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark')}catch(e){}</script>
+  <script defer src="/vendor/htmx.js"></script>
+  <script defer src="app.js"></script>
+  <script defer src="/vendor/alpine.js"></script>
+</head>
+<body x-data @keydown.escape.window="$store.ui.close()">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2.5l2.2 10.2a1 1 0 0 0 1 .8h8.6a1 1 0 0 0 1-.8L20 8H6.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19" r="1.5" fill="currentColor"/><circle cx="17" cy="19" r="1.5" fill="currentColor"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></g></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></g></symbol>
+  </svg>
+
+  <a class="skip" href="#catalogo">Saltar al catálogo</a>
+
+  <header class="navbar">
+    <a class="logo" href="#inicio" aria-label="SmartCart, inicio"><svg class="ico"><use href="#i-layers"/></svg><span>SmartCart</span><em class="badge">Enterprise · v1.0</em></a>
+    <nav class="nav-links" aria-label="Secciones">
+      <a href="#catalogo">Catálogo</a><a href="#proyecto">Proyecto</a><a href="#arquitectura">Arquitectura</a>
+      <a href="#metricas">Dashboard</a><a href="#pedidos">Mis pedidos</a><a href="#conclusiones">Conclusiones</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="icon-btn" @click="$store.ui.toggleTema()" :aria-label="$store.ui.tema === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'">
+        <svg class="ico"><use :href="$store.ui.tema === 'dark' ? '#i-sun' : '#i-moon'"/></svg>
+      </button>
+      <button class="cart-btn" @click="$store.ui.open('carrito')" aria-label="Abrir carrito">
+        <svg class="ico"><use href="#i-cart"/></svg><span x-text="$store.cart.count">0</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="aviso" class="aviso" role="alert" hidden></div>
+
+  <main>
+    <section id="inicio" class="hero">
+      <div class="wrap">
+        <p class="kicker">Proyecto de Ingeniería de Software · Universidad Manuela Beltrán</p>
+        <h1>Optimización Web: nuevas librerías JS y desarrollo E-Commerce</h1>
+        <p class="lead">Tienda de periféricos desarrollada bajo principios de micro-frontends y componentes reactivos ligeros (Alpine.js + HTMX) sobre una arquitectura Cliente - Servidor - Base de Datos, para medir con datos reales qué tan liviana puede ser una interfaz dinámica.</p>
+        <div class="hero-actions"><a class="btn btn-primary" href="#catalogo">Ver catálogo</a><a class="btn btn-ghost" href="#metricas">Ver analíticas en vivo</a></div>
+      </div>
+    </section>
+
+    <section id="catalogo" class="wrap section" aria-labelledby="t-catalogo">
+      <h2 id="t-catalogo">Catálogo</h2>
+      <form id="filtros" class="controls" hx-get="/partials/productos" hx-target="#grid" hx-indicator="#loader" hx-trigger="load, input from:#q delay:250ms, change" @submit.prevent>
+        <label class="search"><svg class="ico"><use href="#i-search"/></svg><span class="sr">Buscar productos</span>
+          <input id="q" type="search" name="q" placeholder="Buscar por nombre o descripción" autocomplete="off"></label>
+        <fieldset class="pills"><legend class="sr">Categoría</legend>
+          <label><input type="radio" name="categoria" value="all" checked><span>Todos</span></label>
+          <label><input type="radio" name="categoria" value="tech"><span>Hardware</span></label>
+          <label><input type="radio" name="categoria" value="accessories"><span>Periféricos</span></label>
+        </fieldset>
+        <label class="sel"><span class="sr">Ordenar por</span>
+          <select name="orden"><option value="default">Ordenar por…</option><option value="low-high">Precio: menor a mayor</option><option value="high-low">Precio: mayor a menor</option><option value="nombre">Nombre (A–Z)</option></select></label>
+      </form>
+      <div id="loader" class="htmx-indicator loader"><span class="spinner"></span> Consultando la base de datos…</div>
+      <div id="grid" class="grid" aria-live="polite"></div>
+    </section>
+
+    <section id="proyecto" class="band">
+      <div class="wrap section">
+        <h2>El proyecto</h2>
+        <div class="trio">
+          <article><h3>Problema</h3><p>Saturación de aplicaciones web con frameworks pesados. Se requiere evaluar librerías reactivas ligeras para mejorar el rendimiento.</p></article>
+          <article><h3>Estado del arte</h3><p>Adopción industrial de librerías como Alpine.js y HTMX para desarrollo dinámico con bajo consumo de memoria.</p></article>
+          <article><h3>Metodología</h3><p>Diseño Front-End responsivo (HTML5/CSS3) e integración con API REST y base de datos relacional.</p></article>
+        </div>
+        <p class="note">Esta página es la propia evaluación: el catálogo y los filtros se actualizan con HTMX (el servidor devuelve HTML), el carrito, los modales y el tema con Alpine.js, y todo se guarda en SQL a través de la API REST.</p>
+      </div>
+    </section>
+
+    <section id="arquitectura" class="wrap section" x-data="arquitectura()">
+      <h2>Arquitectura Cliente - Servidor - Base de Datos</h2>
+      <div class="arch" role="img" aria-label="Diagrama: el cliente (HTML5, CSS3, JavaScript, Alpine.js, HTMX) envía peticiones a un servidor Node.js con Express, que consulta una base de datos SQL">
+        <div class="tier"><h3>Cliente</h3><ul class="chips"><li style="--c:#e44d26">HTML5</li><li style="--c:#2965f1">CSS3</li><li style="--c:#d4b800;color:#1a1a1a">JavaScript</li><li style="--c:#0f7e9c">Alpine.js</li><li style="--c:#3366cc">HTMX</li></ul></div>
+        <div class="link"><span>Petición HTTP / HTML + JSON</span></div>
+        <div class="tier"><h3>Servidor</h3><ul class="chips"><li style="--c:#3c873a">Node.js</li><li style="--c:#1b2b4a">Express</li><li style="--c:#475569">API REST</li></ul></div>
+        <div class="link"><span>Consultas SQL</span></div>
+        <div class="tier"><h3>Base de datos</h3><div class="db"><span>SQL</span></div><p class="mini">productos · pedidos · pedido_items</p></div>
+      </div>
+      <div class="ping">
+        <button class="btn btn-primary" @click="probar()" :disabled="cargando">Probar la conexión de punta a punta</button>
+        <p role="status" x-text="msg"></p>
+      </div>
+    </section>
+
+    <section id="metricas" class="band" x-data="metricas()">
+      <div class="wrap section">
+        <h2>Métricas y resultados</h2>
+        <div class="resultados-poster">
+          <div><strong>85%</strong><span>de preferencia por arquitecturas ligeras en micro-frontends</span></div>
+          <div><strong>40%</strong><span>de reducción en tiempos de carga y respuesta</span></div>
+        </div>
+        <p class="note">Cifras reportadas por el proyecto en el póster. Debajo, lo que esta página mide en vivo en tu navegador y en la base de datos.</p>
+        <div class="live">
+          <div><strong x-text="carga"></strong><span>carga inicial (DOMContentLoaded)</span></div>
+          <div><strong x-text="latencia"></strong><span>latencia de la API</span></div>
+          <div><strong x-text="peso"></strong><span>Alpine.js + HTMX (gzip)</span></div>
+          <div><strong x-text="datos.pedidos ?? '…'"></strong><span>pedidos en la base de datos</span></div>
+        </div>
+        <div class="charts">
+          <figure><figcaption>Ventas mensuales (USD)</figcaption><div class="chart"><canvas id="c-ventas" role="img" aria-label="Gráfica de barras de ventas mensuales"></canvas></div></figure>
+          <figure><figcaption>Ventas por categoría (USD)</figcaption><div class="chart"><canvas id="c-cat" role="img" aria-label="Gráfica circular de ventas por categoría"></canvas></div></figure>
+        </div>
+        <p class="note">Los pedidos de meses anteriores son datos de demostración; cada compra que hagas aquí se suma a las gráficas.</p>
+      </div>
+    </section>
+
+    <section id="pedidos" class="wrap section" x-data="pedidos()">
+      <h2>Mis pedidos</h2>
+      <form class="inline-form" @submit.prevent="buscar()">
+        <label for="p-email">Correo de la compra</label>
+        <input id="p-email" type="email" x-model="email" placeholder="tu@correo.com" required>
+        <button class="btn btn-primary" :disabled="cargando">Buscar pedidos</button>
+      </form>
+      <p class="error" role="alert" x-show="error" x-text="error"></p>
+      <p class="vacio" x-show="buscado && !lista.length && !error">No hay pedidos con ese correo todavía.</p>
+      <ul class="orders">
+        <template x-for="o in lista" :key="o.id">
+          <li><div class="o-head"><strong x-text="'Pedido #' + o.id"></strong><time x-text="fecha(o.creado_en)"></time><strong x-text="'$' + o.total.toFixed(2)"></strong></div>
+            <ul><template x-for="(it, i) in o.items" :key="i"><li x-text="it.cantidad + ' × ' + it.nombre + ' — $' + (it.cantidad * it.precio_unitario).toFixed(2)"></li></template></ul>
+            <p class="mini" x-text="'Envío: ' + (o.envio ? '$' + o.envio.toFixed(2) : 'gratis') + ' · Pago: ' + o.metodo_pago"></p></li>
+        </template>
+      </ul>
+    </section>
+
+    <section id="conclusiones" class="band">
+      <div class="wrap section">
+        <h2>Conclusiones</h2>
+        <p class="lead-sm">Las librerías ligeras como Alpine.js y HTMX son una alternativa viable a los frameworks pesados: reducen los tiempos de carga y respuesta, y se integran con una arquitectura Cliente - Servidor - Base de Datos basada en Node.js/Express y SQL.</p>
+        <h3 id="referencias">Referencias</h3>
+        <ul class="refs">
+          <li><a href="https://alpinejs.dev" target="_blank" rel="noopener">Alpine.js — documentación oficial</a></li>
+          <li><a href="https://htmx.org/docs/" target="_blank" rel="noopener">htmx — documentación oficial</a></li>
+          <li><a href="https://expressjs.com" target="_blank" rel="noopener">Express — framework web para Node.js</a></li>
+          <li><a href="https://nodejs.org/docs/latest/api/" target="_blank" rel="noopener">Node.js — documentación de la API</a></li>
+          <li><a href="https://www.sqlite.org/docs.html" target="_blank" rel="noopener">SQLite — documentación</a></li>
+          <li><a href="https://developer.mozilla.org/es/docs/Web/Performance" target="_blank" rel="noopener">MDN — rendimiento web</a></li>
+          <li><a href="https://www.chartjs.org/docs/latest/" target="_blank" rel="noopener">Chart.js — documentación</a></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p><strong>Autores:</strong> Ángel Garzón, Leonardo Peñuela y Cristian Catolico</p>
+    <p>Ingeniería de Software · Profesora: Olga Lucía · Universidad Manuela Beltrán · 2026</p>
+  </footer>
+
+  <!-- Avisos -->
+  <div class="toast" role="status" aria-live="polite" x-data x-show="$store.ui.toastMsg" x-transition.opacity x-text="$store.ui.toastMsg" x-cloak></div>
+
+  <!-- Modal: detalle del producto (contenido cargado con HTMX) -->
+  <div class="modal" x-data x-show="$store.ui.modal === 'detalle'" x-cloak @click.self="$store.ui.close()">
+    <div class="modal-box wide" role="dialog" aria-modal="true" aria-labelledby="detalle-titulo">
+      <button class="close" @click="$store.ui.close()" aria-label="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+      <div id="detalle-body"><p class="vacio">Cargando producto…</p></div>
+    </div>
+  </div>
+
+  <!-- Modal: carrito → datos de entrega → confirmación -->
+  <div class="modal" x-data="checkout()" x-show="$store.ui.modal === 'carrito'" x-cloak @click.self="$store.ui.close()">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="carrito-titulo">
+      <button class="close" @click="$store.ui.close()" aria-label="Cerrar"><svg class="ico"><use href="#i-x"/></svg></button>
+
+      <div x-show="$store.ui.paso === 'items'">
+        <h2 id="carrito-titulo">Tu carrito</h2>
+        <p class="vacio" x-show="!$store.cart.items.length">El carrito está vacío. Agrega productos desde el catálogo.</p>
+        <ul class="cart-list">
+          <template x-for="it in $store.cart.items" :key="it.id">
+            <li>
+              <img :src="it.img" :alt="it.nombre" onerror="this.onerror=null;this.src='/img/placeholder.svg'">
+              <div class="ci"><strong x-text="it.nombre"></strong><span x-text="'$' + it.precio.toFixed(2) + ' c/u'"></span>
+                <div class="stepper"><button @click="$store.cart.setQty(it.id, it.cantidad - 1)" :aria-label="'Quitar una unidad de ' + it.nombre">−</button><span x-text="it.cantidad"></span><button @click="$store.cart.setQty(it.id, it.cantidad + 1)" :aria-label="'Agregar una unidad de ' + it.nombre">+</button></div></div>
+              <strong x-text="'$' + (it.precio * it.cantidad).toFixed(2)"></strong>
+              <button class="x" @click="$store.cart.remove(it.id)" :aria-label="'Eliminar ' + it.nombre"><svg class="ico"><use href="#i-x"/></svg></button>
+            </li>
+          </template>
+        </ul>
+        <dl class="totals" x-show="$store.cart.items.length">
+          <div><dt>Subtotal</dt><dd x-text="'$' + $store.cart.subtotal.toFixed(2)"></dd></div>
+          <div><dt>Envío</dt><dd x-text="$store.cart.envio ? '$' + $store.cart.envio.toFixed(2) : 'Gratis'"></dd></div>
+          <div class="grand"><dt>Total</dt><dd x-text="'$' + $store.cart.total.toFixed(2)"></dd></div>
+        </dl>
+        <p class="mini" x-show="$store.cart.items.length && $store.cart.envio" x-text="'Envío gratis desde $' + $store.cart.cfg.envioGratisDesde.toFixed(2)"></p>
+        <div class="row-actions" x-show="$store.cart.items.length">
+          <button class="btn btn-ghost" @click="$store.cart.clear()">Vaciar</button>
+          <button class="btn btn-success" @click="$store.ui.paso = 'datos'">Continuar con la compra</button>
+        </div>
+      </div>
+
+      <form x-show="$store.ui.paso === 'datos'" @submit.prevent="enviar()" novalidate>
+        <h2>Datos de entrega</h2>
+        <label for="f-nombre">Nombre completo</label><input id="f-nombre" x-model="f.nombre" autocomplete="name" :aria-invalid="!!err.nombre"><p class="error" x-text="err.nombre"></p>
+        <label for="f-email">Correo electrónico</label><input id="f-email" type="email" x-model="f.email" autocomplete="email" :aria-invalid="!!err.email"><p class="error" x-text="err.email"></p>
+        <label for="f-dir">Dirección de entrega</label><input id="f-dir" x-model="f.direccion" autocomplete="street-address" :aria-invalid="!!err.direccion"><p class="error" x-text="err.direccion"></p>
+        <label for="f-pago">Método de pago</label>
+        <select id="f-pago" x-model="f.metodo_pago"><option value="tarjeta">Tarjeta (simulado)</option><option value="pse">PSE (simulado)</option><option value="contraentrega">Pago contraentrega</option></select>
+        <p class="mini">Es un proyecto académico: no se cobra ni se pide ningún dato bancario.</p>
+        <p class="error" role="alert" x-text="error"></p>
+        <div class="row-actions"><button type="button" class="btn btn-ghost" @click="$store.ui.paso = 'items'">Volver</button>
+          <button class="btn btn-success" :disabled="enviando" x-text="enviando ? 'Procesando…' : 'Confirmar pedido · $' + $store.cart.total.toFixed(2)"></button></div>
+      </form>
+
+      <div x-show="$store.ui.paso === 'ok'" class="ok">
+        <svg class="ico big"><use href="#i-check"/></svg>
+        <h2>¡Pedido confirmado!</h2>
+        <template x-if="pedido"><div>
+          <p>Tu número de pedido es <strong x-text="'#' + pedido.id"></strong>. Total pagado: <strong x-text="'$' + pedido.total.toFixed(2)"></strong>.</p>
+          <p class="mini">Puedes consultarlo en «Mis pedidos» con el correo <span x-text="f.email"></span>.</p></div></template>
+        <div class="row-actions"><a class="btn btn-ghost" href="#pedidos" @click="$store.ui.close()">Ver mis pedidos</a><button class="btn btn-primary" @click="$store.ui.close()">Seguir comprando</button></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
